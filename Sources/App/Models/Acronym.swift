@@ -1,5 +1,7 @@
 import Vapor
-import FluentSQLite
+//import FluentSQLite
+//import FluentMySQL
+import FluentPostgreSQL
 
 final class Acronym: Codable {
     //Fluent 모델. 모든 Fluent 모델은 Codalbe을 구현해야 한다.
@@ -14,21 +16,27 @@ final class Acronym: Codable {
     }
 }
 
-extension Acronym: Model {
-    //Fluent 모델
-    typealias Database = SQLiteDatabase
-    //Fluent에서 사용할 모델 템플릿은 SQLite를 사용하도록 구성되어 있다.
-    typealias ID = Int
-    //Fluent의 ID 유형
-    public static var idKey: IDKey = \Acronym.id
-    //ID 속성의 경로
-    
-}
+//extension Acronym: Model {
+//    //Fluent 모델
+//    typealias Database = SQLiteDatabase
+//    //Fluent에서 사용할 모델 템플릿은 SQLite를 사용하도록 구성되어 있다.
+//    typealias ID = Int
+//    //Fluent의 ID 유형
+//    public static var idKey: IDKey = \Acronym.id
+//    //ID 속성의 경로
+//
+//}
 
-extension Acronym: SQLiteModel {}
+//extension Acronym: SQLiteModel {}
 //Fluent는 각 DB의 모델 Helper 프로토콜을 제공하므로 따로 ID 유형이나 키를 지정할 필요 없다.
 //여기에선 id가 Int이지만, UUID(SQLiteUUIDModel) 혹은 String (SQLiteStringModel)모델도 있다.
 //특정한 id 유형에 맞춘 프로토콜을 구현해야 한다.
+
+//extension Acronym: MySQLModel {}
+//MySQL 모델로 지정한다.
+
+extension Acronym: PostgreSQLModel {}
+//PostgreSQL 모델로 지정한다.
 
 extension Acronym: Migration {}
 //모델을 DB에 저장하려면 table을 작성해야 한다. Fluent는 마이그레이션 작업을 수행한다.
