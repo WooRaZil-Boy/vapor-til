@@ -128,3 +128,4 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
 
 //Deploying
 //Docker를 로컬 또는 Vapor Cloud와 함께 사용하도록 응용 프로그램을 구성하고 배포를 해야 한다.
+//위의 DB 설정을 완료하고, Git 커밋 푸시 후, vapor cloud deploy 로 deploy한다.
