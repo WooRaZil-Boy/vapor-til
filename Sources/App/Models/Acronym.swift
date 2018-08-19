@@ -58,6 +58,9 @@ extension Acronym: Content {}
 
 //이 POST request를 처리하고 저장하는 것은 routes에 추가해 주면 된다.
 
+extension Acronym: Parameter {}
+//검색, 수정, 삭제 등에서 특정 파라미터를 추가하려면 Parameter를 구현해야 한다.
+
 
 
 

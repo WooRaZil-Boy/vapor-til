@@ -1,4 +1,5 @@
 import Vapor
+import Fluent
 
 /// Register your application's routes here.
 public func routes(_ router: Router) throws {
@@ -8,10 +9,24 @@ public func routes(_ router: Router) throws {
         return "Hello, world!"
     }
     
+    //CRUD and REST
+    //CRUD는 4가지 기본 기능, Create(생성), Retrieve(검색), Update(수정), Delete(삭제)
+    //RESTful API는 클라이언트가 애플리케이션에서 CRUD 함수를 호출할 수 있게 한다.
+    //일반적으로 모델에 대한 리소스 URL(여기서는 https://localhost:8080/api/acronyms)로 적절한 HTTP request 경로를 정의하여 CRUD 한다.
+    //다음과 같은 예가 있다.
+    //• GET https://localhost:8080/api/acronyms/ : 모든 acronyms를 가져온다.
+    //• POST https://localhost:8080/api/acronyms : 새로운 acronym을 생성한다.
+    //• GET https://localhost:8080/api/acronyms/1 : ID가 1 인 acronym을 가져온다.
+    //• PUT https://localhost:8080/api/acronyms/1 : ID가 1 인 acronym를 업데이트 한다.
+    //• DELETE https://localhost:8080/api/acronyms/1 : ID가 1 인 acronym를 삭제 한다.
+    
+    //Create
     router.post("api", "acronyms") { req -> Future<Acronym> in //Future<Acronym> 타입을 반환한다.
         //POST 요청을 처리하는 경로. 여기서는 http://localhost:8080/api/acronyms 이 된다.
         return try req.content.decode(Acronym.self)
             //request JSON을 Codeable을 사용해, Acronym 모델로 디코딩한다.
+            //Acronym이 Content를 구현하므로 간단히 처리할 수 있다.
+            //decode는 Future를 반환한다.
             .flatMap(to: Acronym.self) { acronym in
                 //디코더가 Future<Acronym>을 반환하므로, flatMap(to:)를 사용한다.
                 return acronym.save(on: req) //Fluent의 모델 저장 메서드
@@ -23,6 +38,124 @@ public func routes(_ router: Router) throws {
                 //Vapor는 손쉽게 response에서 Model을 JSON으로 반환한다.
         }
     }
+    
+    //Retrieve
+    router.get("api", "acronyms") { req -> Future<[Acronym]> in
+        //GET 요청을 처리하는 경로. 여기서는 http://localhost:8080/api/acronyms 이 된다.
+        return Acronym.query(on: req).all() //질의 수행
+        //모든 Acronym를 검색한다.
+        
+        //Fluent로 직접 쿼리를 쓰지 않아도 간단하게 구현할 수 있다. 단 DatabaseConnectable를 구현해야 한다.
+        //결국 SQL의 SELECT * FROM Acronyms; 와 같다.
+    }
+    
+    router.get("api", "acronyms", Acronym.parameter) { req -> Future<Acronym> in
+        //GET 요청을 처리하는 경로. 여기서는 http://localhost:8080/api/acronyms/<ID> 가 된다.
+        //id 속성을 최종 경로 세그먼트로 사용해 특정 조건을 만족하는 객체만 검색한다. Future<Acronym>를 반환한다.
+        return try req.parameters.next(Acronym.self)
+        //request의 parameters를 사용해서, 해당 조건을 만족하는 객체만 추출한다.
+        //존재하지 않거나 id유형이 잘못된 경우 오류 처리를 해야 한다.
+    }
+    
+    //Update
+    router.put("api", "acronyms", Acronym.parameter) { req -> Future<Acronym> in
+        //업데이트는 PUT 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/<ID> 가 된다.
+        //id 속성을 최종 경로 세그먼트로 사용해 특정 조건을 만족하는 객체만 가져온다.
+        //request로 새로운 정보를 가진 데이터를 가져온다. Future<Acronym>를 반환한다.
+        return try flatMap(to: Acronym.self, req.parameters.next(Acronym.self), req.content.decode(Acronym.self)) { acronym, updatedAcronym in
+            //flatMap으로 매개 변수 추출과 디코딩이 완료될 때까지 기다린다.
+            //파라미터로 to: DB의 모델 객체(Acronym), id로 요청해서 가져온 객체(수정할 객체), 디코딩 객체
+            //DB의 객체와 수정할 객체를 가져온다.
+            
+            acronym.short = updatedAcronym.short
+            acronym.long = updatedAcronym.long
+            //업데이트
+            
+            return acronym.save(on: req) //Fluent의 모델 저장 메서드
+            //Fluent (Acronym)을 사용하여 모델을 저장한다.
+            //Fluent는 저장되면서 모델을 반환한다(여기서는 Future<Acronym>).
+        }
+    }
+    
+    //Delete
+    router.delete("api", "acronyms", Acronym.parameter) { req -> Future<HTTPStatus> in
+        //삭제는 DELETE 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/<ID> 가 된다.
+        //id 속성을 최종 경로 세그먼트로 사용해 특정 조건을 만족하는 객체만 가져온다. Future<HTTPStatus>를 반환한다.
+        return try req.parameters.next(Acronym.self)
+            //request의 파라미터에서 삭제할 Acronym 객체를 가져온다.
+            .delete(on: req) //삭제
+            //Future를 unwrapping 하는 대신, Fluent는 해당 Future에서 직접 delete(on :)를 호출 할 수 있다.
+            //이렇게 처리하면, 코드를 정리하고 중첩을 줄일 수 있다.
+            .transform(to: HTTPStatus.noContent)
+            //결과를 204 No Content response로 변환한다. 클라이언트에게 요청이 성공했음을 알려주지만, 리턴할 내용이 없을 때 쓴다.
+    }
+    
+    
+    
+    
+    //Fluent queries
+    //기본적인 CRUD 외에도, Fluent를 사용해 다양한 쿼리를 쉽게 사용할 수 있다.
+    
+    //Filter
+    router.get("api", "acronyms", "search") { req -> Future<[Acronym]> in
+        //삭제는 GET 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/search 가 된다.
+        //Future<[Acronym]>를 반환한다.
+        guard let searchTerm = req.query[String.self, at: "term"] else {
+            //URL query string로 검색용어를 만든다. 클라이언트의 경로에 적합하지 않는 정보를 전달할 수도 있어 적절한 경우에만 사용하는 것이 좋다.
+            //req.query.decode(_ :) 를 사용해, Codable로 작업을 할 수도 있다.
+            //최종 경로는 http://localhost:8080/api/acronyms/search?term= 이 된다.
+            throw Abort(.badRequest) //Vapor의 Error
+            //실패하면 400 Bad Request error 를 throw 한다.
+        }
+        
+//        return Acronym.query(on: req)
+//            .filter(\.short == searchTerm) //필터로 short 속성이 searchTerm과 일치하는 acronym을 찾는다.
+//            //key paths를 사용하므로, 컴파일러는 속성 및 유형을 필터링하여 안정성을 강화해 런타임 오류를 방지할 수 있다.
+//            .all()
+        
+        return Acronym.query(on: req).group(.or) { or in
+            //다중 필드를 사용해 필터를 적용하려면, 쿼리를 변경해야 한다. 이 경우에는 group을 사용해 필터링한다.
+            //.or 관계를 사용하는 필터 그룹 생성
+            or.filter(\.short == searchTerm)
+            //그룹에 short 필터 추가
+            or.filter(\.long == searchTerm)
+            //그룹에 long 필터 추가
+        }.all()
+        //두 개의 필터에 하나라도 일치하는 모든 결과를 반환한다.
+    }
+    
+    //First result
+    router.get("api", "acronyms", "first") { req -> Future<Acronym> in
+        //First result는 GET 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/first 가 된다.
+        //쿼리의 첫 번째 결과만 필요할 때 사용할 수 있다. 모든 결과를 메모리에 로드하는 대신 하나의 결과만 반환한다.
+        //Future<Acronym>를 반환한다.
+        return Acronym.query(on: req)
+            .first() //첫 결과를 가져온다.
+            //first()를 필터 결과와 같이 모든 쿼리에 적용할 수 있다.
+            .map(to: Acronym.self) { acronym in
+                guard let acronym = acronym else {
+                    //결과가 nil인 경우
+                    throw Abort(.notFound)
+                    //404 Not Found error 발생
+                }
+                
+                return acronym //해당 Acronym 반환
+            }
+    }
+    
+    //Sorting results
+    router.get("api", "acronyms", "sorted") { req -> Future<[Acronym]> in
+        //정렬은 GET 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/sorted 가 된다.
+        //Future<[Acronym]>를 반환한다.
+        return Acronym.query(on: req)
+            .sort(\.short, .ascending) //정렬할 필드와 순서를 정해 준다. //오름차순 정렬
+            .all()
+    }
+    
+    
+    
+    
+    
     
     //    // Example of configuring a controller
     //    let todoController = TodoController()
@@ -102,8 +235,8 @@ public func routes(_ router: Router) throws {
 //애플리케이션 자체, 요청 및 응답이다. 이 응용프로그램을 사용해 부팅하는데 필요한 서비스를 만들어야 한다.
 //해당 요청을 처리하는 동안 암호를 해시하려면 요청 및 응답 컨테이너를 사용해서 BCryptHasher 같은 서비스를 만들어야 한다.
 
-
-
+//URL에서 공백을 사용하려면 %20 또는 + 로 인코딩해야 한다.
+//ex) http://localhost:8080/api/acronyms/search?term=Oh+My+God
 
 
 
