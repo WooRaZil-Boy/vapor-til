@@ -39,6 +39,8 @@ struct AcronymsController: RouteCollection {
         //First result는 GET 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/first 가 된다.
         acronymsRoutes.get("sorted", use: sortedHandler)
         //정렬은 GET 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/sorted 가 된다.
+        acronymsRoutes.get(Acronym.parameter, "user", use: getUserHandler)
+        //Getting the parent는 GET 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/<ID>/user 가 된다.
     }
     
     //Create
@@ -95,6 +97,7 @@ struct AcronymsController: RouteCollection {
             //DB의 객체와 수정할 객체를 가져온다.
             acronym.short = updatedAcronym.short
             acronym.long = updatedAcronym.long
+            acronym.userID = updatedAcronym.userID
             //업데이트
             
             return acronym.save(on: req) //Fluent의 모델 저장 메서드
@@ -157,6 +160,20 @@ struct AcronymsController: RouteCollection {
     //Sorting results
     func sortedHandler(_ req: Request) throws -> Future<[Acronym]> { //Future<[Acronym]>를 반환한다.
         return Acronym.query(on: req).sort(\.short, .ascending).all() //정렬할 필드와 순서를 정해 준다. //오름차순 정렬
+    }
+    
+    
+    
+    
+    //Getting the parent
+    func getUserHandler(_ req: Request) throws -> Future<User> { //Future<User>를 반환한다.
+        return try req
+            .parameters.next(Acronym.self) //request의 파라미터에서 해당 Acronym 객체를 가져온다.
+            .flatMap(to: User.self) { acronym in
+                //flatMap(to:)는 해당하는 유형으로 최종 반환한다.
+                acronym.user.get(on: req)
+                //computed property에서 user를 가져온다.
+            }
     }
 }
 

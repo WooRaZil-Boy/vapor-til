@@ -99,8 +99,20 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
 //    services.register(migrations)
     
     //PostgreSQL
-    migrations.add(model: Acronym.self, database: .psql) //PostgreSQL DB를 지정해 준다.
+    migrations.add(model: User.self, database: .psql) //User 모델 추가
+    //Acronym의 userID 속성이 User의 id에 연결하기 때문에 User 테이블을 먼저 생성해야 한다.
+    migrations.add(model: Acronym.self, database: .psql) //PostgreSQL DB를 지정해 준다. //Acronym 모델 추기
     services.register(migrations)
+    
+    
+    
+    
+    //Reset database
+    var commandConfig = CommandConfig.default() //기본 구성으로 CommandConfig를 생성
+    commandConfig.useFluentCommands() //Fluent 명령을 CommandConfig에 추가한다.
+    //이를 추가하면, id 되돌리기가 있는 revert 명령과 식별자 migrate가 있는 migrate 명령이 모두 추가된다.
+    services.register(commandConfig) //commandConfig를 서비스에 등록
+    //Local에서 DB를 삭제한 경우, Vapor Cloud에도 반영을 해주기 위한 코드
     
 }
 

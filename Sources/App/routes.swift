@@ -157,8 +157,11 @@ public func routes(_ router: Router) throws {
     
     //Controller
     //위의 모든 routes 들을 AcronymsController를 사용해 경로를 관리하도록 수정
-    let acronymsController = AcronymsController() //경로 처리를 담당하는 Controller 생성
+    let acronymsController = AcronymsController() //Acronym의 경로 처리를 담당하는 Controller 생성
     try router.register(collection: acronymsController) //라우터에 등록한다.
+    
+    let usersController = UsersController() //User의 경로 처리를 담당하는 Controller 생성
+    try router.register(collection: usersController) //라우터에 등록한다.
     
     
     
