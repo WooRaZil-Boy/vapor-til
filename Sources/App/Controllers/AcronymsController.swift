@@ -41,6 +41,12 @@ struct AcronymsController: RouteCollection {
         //정렬은 GET 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/sorted 가 된다.
         acronymsRoutes.get(Acronym.parameter, "user", use: getUserHandler)
         //Getting the parent는 GET 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/<ID>/user 가 된다.
+        acronymsRoutes.post(Acronym.parameter, "categories", Category.parameter, use: addCategoriesHandler)
+        //형제 관계 생성은 POST 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/<ID>/categories/<ID> 가 된다.
+        acronymsRoutes.get(Acronym.parameter, "categories", use: getCategoriesHandler)
+        //형제 관계 검색은 GET 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/<ID>/categories/ 가 된다.
+        acronymsRoutes.delete(Acronym.parameter, "categories", Category.parameter, use: removeCategoriesHandler)
+        //형제 관계 삭제는 DELETE 요청을 사용한다. 경로는 http://localhost:8080/api/acronyms/<ID>/categories/<ID> 가 된다.
     }
     
     //Create
@@ -174,6 +180,48 @@ struct AcronymsController: RouteCollection {
                 acronym.user.get(on: req)
                 //computed property에서 user를 가져온다.
             }
+    }
+    
+    
+    
+    
+    //Sibling relationship
+    func addCategoriesHandler(_ req: Request) throws -> Future<HTTPStatus> { //Future<HTTPStatus> 반환
+        return try flatMap( //flatMap으로 request의 파라미터에서 Acronym와 Category를 추출한다(클로저의 파라미터가 된다).
+            to: HTTPStatus.self, //flatMap 이후 최종 반환형
+            req.parameters.next(Acronym.self),
+            req.parameters.next(Category.self)) { acronym, category in
+                return acronym.categories
+                    .attach(category, on: req)
+                    //attach(_: on:)로 Acronym와 Category 사이의 관계를 설정한다.
+                    //피벗 모델이 만들어지며 DB에 저장된다.
+                    .transform(to: .created)
+                    //201 Created response로 결과를 변환한다.
+            }
+    }
+    
+    //Querying the relationship
+    func getCategoriesHandler(_ req: Request) throws -> Future<[Category]> { //Future<[Category]> 반환
+        return try req.parameters.next(Acronym.self) //파라미터를 가져온다.
+            .flatMap(to: [Category].self) { acronym in //flatMap으로 request의 파라미터에서 Acronym를 추출하고 wrapping한다.
+                try acronym.categories.query(on: req).all()
+                //computed property에서 Category를 가져오고 Fluent 쿼리를 사용해서 모든 Category를 반환한다.
+            }
+    }
+    
+    //Removing the relationship
+    func removeCategoriesHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        return try flatMap( //flatMap으로 request의 파라미터에서 Acronym와 Category를 추출한다(클로저의 파라미터가 된다).
+            to: HTTPStatus.self, //flatMap 이후 최종 반환형
+            req.parameters.next(Acronym.self),
+            req.parameters.next(Category.self)) { acronym, category in
+                return acronym.categories
+                    .detach(category, on: req)
+                    //detach(_: on:)로 Acronym와 Category 사이의 관계를 삭제한다.
+                    //피벗 모델을 찾아 DB에서 삭제한다.
+                    .transform(to: .noContent)
+                    //204 No Content response로 결과를 변환한다.
+        }
     }
 }
 

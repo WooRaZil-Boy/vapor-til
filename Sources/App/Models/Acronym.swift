@@ -101,6 +101,16 @@ extension Acronym: Migration {
     //외래 키 제약 조건은 마이그레이션에서 설정된다.
 }
 
+//Sibling relationships
+extension Acronym {
+    var categories: Siblings<Acronym, Category, AcronymCategoryPivot> {
+        //Siblings<Base, Related, Through>
+        //실제로 두 모델 사이의 관계를 만들려면 피벗을 사용해야 한다.
+        return siblings()
+        //Fluent의 siblings() 함수를 메서드로 모든 Category를 검색한다.
+    }
+}
+
 
 
 

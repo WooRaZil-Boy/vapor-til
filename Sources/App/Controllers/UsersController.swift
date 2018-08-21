@@ -8,7 +8,7 @@ struct UsersController: RouteCollection {
         //필요한 경로들을 정의해 주면 된다.
         
         let usersRoute = router.grouped("api", "users")
-        //반복되는 경로에 대해 새 경로 그룹을 생성한다.
+        //반복되는 경로에 대해 새 초기 경로 그룹을 생성한다(/api/users).
         
         usersRoute.post(User.self, use: createHandler)
         //생성은 POST 요청을 사용한다. 경로는 http://localhost:8080/api/users 가 된다.
