@@ -63,13 +63,31 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     let hostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
     let username = Environment.get("DATABASE_USER") ?? "vapor"
-    let databaseName = Environment.get("DATABASE_DB") ?? "vapor"
+
+    let databaseName: String
+    let databasePort: Int
+    if (env == .testing) { //테스팅 중에는 실행 DB 이름과 포트를 다른 값으로 설정한다.
+        databaseName = "vapor-test"
+        
+        if let testPort = Environment.get("DATABASE_PORT") {
+            //DB 포트를 테스트용 환경 변수로 설정한다(Linux docker-compose.yml의 포트를 가져온다).
+            databasePort = Int(testPort) ?? 5433
+        } else {
+           databasePort = 5433
+        }
+
+    } else { //실제 응용 프로그램 실행. 테스팅과는 DB 이름과 포트를 다른 값으로 설정한다.
+        databaseName = Environment.get("DATABASE_DB") ?? "vapor"
+        databasePort = 5432
+    }
+    
     let password = Environment.get("DATABASE_PASSWORD") ?? "password"
     //Environment.get(_ :)로 Vapor Cloud가 설정한 환경 변수를 가져올 수 있다.
     //nil을 반환하면 로컬에서 실행되는 경우이므로, 기본값으로 사용한다.
     
     let databaseConfig = PostgreSQLDatabaseConfig(
         hostname: hostname,
+        port: databasePort, //포트 구성
         username: username,
         database: databaseName,
         password: password)

@@ -50,7 +50,7 @@ let package = Package(
         .target(name: "App", dependencies: ["FluentPostgreSQL",
                                             "Vapor"]),
         .target(name: "Run", dependencies: ["App"]),
-        .testTarget(name: "AppTests", dependencies: ["App"]),
+        .testTarget(name: "AppTests", dependencies: ["App"]), //테스트
         //App target이 FluentPostgreSQL의 dependency 링크가 바르게 연결되도록 지정
     ]
 )
