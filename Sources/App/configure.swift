@@ -25,7 +25,12 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     /// Register middleware
     var middlewares = MiddlewareConfig() // Create _empty_ middleware config
-    /// middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory
+    middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory
+    //대부분의 웹 사이트는 이미지 혹은 스타일 시티와 같은 정적 파일을 사용할 수 있어야 한다.
+    //CDN, Nginx, Apache와 같은 서버를 사용하여 작업을 수행하지만, Vapor는 FileMiddleware로 파일을 제공한다.
+    //FileMiddleware를 MiddlewareConfig에 추가하여, 파일을 제공한다.
+    //기본적으로 프로젝트의 Public 디렉토리에 있는 파일을 제공한다.
+    //ex. Public/styles/stylesheet.css 파일을 /styles/stylesheet.css 로 엑세스 할 수 있다.
     middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
     services.register(middlewares)
     

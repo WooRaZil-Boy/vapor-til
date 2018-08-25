@@ -9,6 +9,10 @@ struct WebsiteController: RouteCollection {
         //router의 경로로 GET request. 등록된 메서드(indexHandler)를 처리한다. 경로는 http://localhost:8080/ 가 된다.
         router.get("acronyms", Acronym.parameter, use: acronymHandler)
         //acronyms 상세보기 페이지 GET request. 경로는 http://localhost:8080/acronyms/<ID> 가 된다.
+        router.get("users", User.parameter, use: userHandler)
+        //user 보기 페이지 GET request. 경로는 http://localhost:8080/users/<ID> 가 된다.
+        router.get("users", use: allUsersHandler)
+        //모든 user 보기 페이지 GET request. 경로는 http://localhost:8080/users 가 된다.
     }
     
     func indexHandler(_ req: Request) throws -> Future<View> { //Future<View> 반환
@@ -47,6 +51,37 @@ struct WebsiteController: RouteCollection {
                     }
             }
     }
+    
+    func userHandler(_ req: Request) throws -> Future<View> { //Future<View> 반환
+        //User page
+        return try req.parameters.next(User.self)
+            //매개 변수에서 User를 추출하고
+            .flatMap(to: View.self) { user in
+                //flatMap으로 result를 wrapping한다.
+                return try user.acronyms //user의 acronyms를 가져오고
+                    .query(on: req)
+                    .all()
+                    .flatMap(to: View.self) { acronyms in //flatMap으로 result를 wrapping한다.
+                        let context = UserContext(title: user.name, user: user, acronyms: acronyms)
+                        //세부 정보가 있는 UserContext를 생성
+                        return try req.view().render("user", context)
+                        //user.leaf 템플릿을 사용해서 페이지를 렌더링한다.
+                    }
+            }
+    }
+    
+    func allUsersHandler(_ req: Request) throws -> Future<View> { //Future<View> 반환
+        //All User page
+        return User.query(on: req)
+            .all()
+            .flatMap(to: View.self) { users in
+                //flatMap으로 result를 wrapping한다.
+                let context = AllUsersContext(title: "All Users", users: users)
+                //세부 정보가 있는 AllUsersContext를 생성
+                return try req.view().render("allUsers", context)
+                //allUsers.leaf 템플릿을 사용해서 페이지를 렌더링한다.
+            }
+    }
 }
 
 struct IndexContext: Encodable {
@@ -66,6 +101,19 @@ struct AcronymContext: Encodable {
     let title: String
     let acronym: Acronym
     let user: User
+}
+
+struct UserContext: Encodable {
+    //User 정보를 표시하는 페이지의 Encodable 유형
+    let title: String
+    let user: User
+    let acronyms: [Acronym]
+}
+
+struct AllUsersContext: Encodable {
+    //모든 User 정보를 표시하는 페이지의 Encodable 유형
+    let title: String
+    let users: [User]
 }
 
 //Vapor와 마찬가지로 Leaf는 Codable을 사용하여 데이터를 처리한다.
