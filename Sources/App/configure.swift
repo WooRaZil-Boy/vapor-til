@@ -1,6 +1,7 @@
 //import FluentMySQL //FluentMySQL
 import FluentPostgreSQL //FluentPostgreSQL
 import Vapor
+import Leaf
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
@@ -13,6 +14,9 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     try services.register(FluentPostgreSQLProvider())
     //FluentPostgreSQLProvider를 등록한다.
+    
+    try services.register(LeafProvider())
+    //LeafProvider를 등록한다.
     
     /// Register routes to the router
     let router = EngineRouter.default()
@@ -134,6 +138,11 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     services.register(commandConfig) //commandConfig를 서비스에 등록
     //Local에서 DB를 삭제한 경우, Vapor Cloud에도 반영을 해주기 위한 코드. p.142
     
+    config.prefer(LeafRenderer.self, for: ViewRenderer.self)
+    //ViewRenderer 유형을 요청할 때, Vapor가 LeafRenderer를 사용하도록 설정한다.
+    //렌더러를 얻기 위해 일반적으로 req.view()를 사용하면 다른 템플릿 엔진으로 쉽게 전환할 수 있다.
+    //req.view()에 Vapor에 ViewRenderer를 준수하는 유형을 사용해야 한다(WebsiteController).
+    //Leaf가 빌드된 모듈인 TemplateKit은 PlaintextRenderer를 제공하고, Leaf는 LeafRenderer를 제공한다.
 }
 
 //DB와의 연결 및 초기화 설정은 configure에서 한다.

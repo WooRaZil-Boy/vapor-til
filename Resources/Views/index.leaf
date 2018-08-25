@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en"> #// 기본 HTML 5 페이지를 선언한다(leaf에서 주석은 #//로 단다).
+<head>
+    <meta charset="utf-8" />
+    <title>#(title) | Acronyms</title>
+    #// #()는 Leaf 함수로 여기서는 title이라는 매개변수를 추출한다.
+    #// Vapor와 마찬가지로 Leaf는 Codable을 사용하여 데이터를 처리한다.
+    #// WebsiteController 참고
+</head>
+<body>
+    <h1>Acronyms</h1>
+    #if(acronyms) {
+        #// Leaf의 #if()를 사용해서 acronyms 변수가 설정되어 있는 지 확인한다.
+        #// if()는 null 허용 여부에 대한 변수의 유효성 검사, Bool 연산, 표현식 평가를 할 수 있다.
+        <table>
+            #// acronyms이 존재하는 경우, HTML 테이블을 생성한다.
+            <thead>
+                <tr>
+                    <th>Short</th>
+                    <th>Long</th>
+                </tr>
+            </thead>
+            #// 헤더에 Short과 Long을 입력해 준다.
+            <tbody>
+                #for(acronym in acronyms) {
+                    #// Leaf의 #for()를 사용해, 모든 acronyms를 반복한다.
+                    <tr>
+                        <td><a href="/acronyms/#(acronym.id)">#(acronym.short)</a></td>
+                        #// acronyms.leaf로 가는 링크를 설정한다.
+                        <td>#(acronym.long)</td>
+                    </tr>
+                    #// 각 acronym에 대한 행을 작성한다. 매개변수로 입력된 IndexContext의 변수들을 가져올 수 있다.
+                    #// Leaf의 #()함수를 사용해 IndexContext의 변수를 추출해 오고, dot notation으로 액세스할 수 있다.
+                }
+            </tbody>
+        </table>
+    } else {
+        #// acronyms이 비어 있는 경우, 안내 메시지를 출력한다.
+        <h2>There aren’t any acronyms yet!</h2>
+    }
+</body>
+</html>

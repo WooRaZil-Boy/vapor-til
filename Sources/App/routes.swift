@@ -166,6 +166,9 @@ public func routes(_ router: Router) throws {
     let categoriesController = CategoriesController() //Category의 경로 처리를 담당하는 Controller 생성
     try router.register(collection: categoriesController) //라우터에 등록한다.
     
+    let websiteController = WebsiteController() //Website의 경로를 처리하는 Controller 생성
+    try router.register(collection: websiteController) //라우터에 등록한다.
+    
     
     
     
