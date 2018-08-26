@@ -203,7 +203,7 @@ struct AcronymsController: RouteCollection {
     //Querying the relationship
     func getCategoriesHandler(_ req: Request) throws -> Future<[Category]> { //Future<[Category]> 반환
         return try req.parameters.next(Acronym.self) //파라미터를 가져온다.
-            .flatMap(to: [Category].self) { acronym in //flatMap으로 request의 파라미터에서 Acronym를 추출하고 wrapping한다.
+            .flatMap(to: [Category].self) { acronym in //flatMap으로 request의 파라미터에서 Acronym를 추출하고 unwrapping한다.
                 try acronym.categories.query(on: req).all()
                 //computed property에서 Category를 가져오고 Fluent 쿼리를 사용해서 모든 Category를 반환한다.
             }

@@ -16,10 +16,10 @@
                 </tr>
             </thead>
             #// 헤더에 Short과 Long을 입력해 준다.
-            
+
             <tbody>
                 #for(acronym in acronyms) {
-                    #// Leaf의 #for()를 사용해, 모든 acronyms를 반복한다.
+                    #// Leaf의 #for()를 사용해, 모든 acronym를 반복한다.
                     <tr>
                         <td><a href="/acronyms/#(acronym.id)">#(acronym.short)</a></td>
                         #// acronyms.leaf로 가는 링크를 설정한다.

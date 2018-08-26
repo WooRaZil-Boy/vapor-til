@@ -1,15 +1,12 @@
 #set("content") { #// 콘텐츠 변수를 설정한다. 다른 곳에서 #get() 으로 해당 부분을 가져올 수 있다.
-    <h1>All Users</h1>
+    <h1>All Categories</h1>
 
-    #if(count(users) > 0) {
-        #// Leaf의 #if() 와 count를 사용해, users이 비었는지 확인한다.
+    #if(count(categories) > 0) {
+        #// Leaf의 #if() 와 count를 사용해, categories이 비었는지 확인한다.
         #// if()는 null 허용 여부에 대한 변수의 유효성 검사, Bool 연산, 표현식 평가를 할 수 있다.
         <table class="table table-bordered table-hover">
             <thead class="thead-light">
                 <tr>
-                    <th>
-                        Username
-                    </th>
                     <th>
                         Name
                     </th>
@@ -17,22 +14,21 @@
             </thead>
 
             <tbody>
-                #for(user in users) {
-                    #// Leaf의 #for()를 사용해, 모든 user를 반복한다.
+                #for(category in categories) {
+                    #// Leaf의 #for()를 사용해, 모든 category를 반복한다.
                     <tr>
                         <td>
-                            <a href="/users/#(user.id)">
-                                #(user.username)
+                            <a href="/categories/#(category.id)">
+                                #(category.name)
                             </a>
                         </td>
-                        <td>#(user.name)</td>
                     </tr>
                 }
             </tbody>
         </table>
     } else {
-        #// users가 비어 있는 경우, 안내 메시지를 출력한다.
-        <h2>There aren't any users yet!</h2>
+        #// categories가 비어 있는 경우, 안내 메시지를 출력한다.
+        <h2>There aren't any categories yet!</h2>
     }
 }
 

@@ -42,6 +42,16 @@
                 </li>
                 #// 유저 페이지에 대한 링크 추가
                 #// Leaf의 #if를 사용해, 페이지 제목이 "All Users"인 경우 active class를 추가한다.
+                <li class="nav-item #if(title == "All Categories"){active}">
+                    <a href="/categories" class="nav-link">All Categories</a>
+                </li>
+                #// 카테고리 페이지에 대한 링크 추가
+                #// Leaf의 #if를 사용해, 페이지 제목이 "All Users"인 경우 active class를 추가한다.
+                <li class="nav-item #if(title == "Create An Acronym"){active}">
+                    <a href="/acronyms/create" class="nav-link">Create An Acronym</a>
+                </li>
+                #// Acronym 생성 페이지에 대한 링크 추가
+                #// Leaf의 #if를 사용해, 페이지 제목이 "Create An Acronym"인 경우 active class를 추가한다.
             </ul>
         </div>
     </nav>

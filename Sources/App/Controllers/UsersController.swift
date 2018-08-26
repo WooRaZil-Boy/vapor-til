@@ -44,7 +44,7 @@ struct UsersController: RouteCollection {
     func getAcronymsHandler(_ req: Request) throws -> Future<[Acronym]> { //Future<[Acronym]>를 반환한다.
         return try req
             .parameters.next(User.self)
-            .flatMap(to: [Acronym].self) { user in //request의 매개 변수로 지정된 User를 가져와 flatMap으로 Future를 wrapping한다.
+            .flatMap(to: [Acronym].self) { user in //request의 매개 변수로 지정된 User를 가져와 flatMap으로 Future를 unwrapping한다.
                 //flatMap(to:)는 해당하는 유형으로 최종 반환한다.
                 try user.acronyms.query(on: req).all()
                 //computed property에서 acronym를 가져온다.

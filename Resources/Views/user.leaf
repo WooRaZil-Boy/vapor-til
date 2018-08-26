@@ -4,6 +4,7 @@
 
     #if(count(acronyms) > 0) {
         #// Leaf의 #if() 와 count를 사용해, acronyms이 비었는지 확인한다.
+        #// if()는 null 허용 여부에 대한 변수의 유효성 검사, Bool 연산, 표현식 평가를 할 수 있다.
         <table class="table table-bordered table-hover">
             <thead class="thead-light">
                 <tr>
@@ -18,7 +19,7 @@
 
             <tbody>
                 #for(acronym in acronyms) {
-                #// Leaf의 #for() 을 사용해 acronym를 table의 tr로 추가해 준다.
+                    #// Leaf의 #for() 을 사용해 acronym를 table의 tr로 추가해 준다.
                     <tr>
                         <td>
                             <a href="/acronyms/#(acronym.id)"> #(acronym.short)</a>
@@ -29,6 +30,7 @@
             </tbody>
         </table>
     } else {
+        #// acronyms이 비어 있는 경우, 안내 메시지를 출력한다.
         <h2>There aren't any acronyms yet!</h2>
     }
 }
