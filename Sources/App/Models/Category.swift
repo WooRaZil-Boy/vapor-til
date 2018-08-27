@@ -31,21 +31,26 @@ extension Category {
     //Acronym이 하나 이상의 Category에 속할 수 있으며, Category에는 하나 이상의 Acronym이 포함될 수 있다.
     
     static func addCategory(_ name: String, to acronym: Acronym, on req: Request) throws -> Future<Void> {
+        //Category 추가
         return Category.query(on: req)
-            .filter(\.name == name)
+            .filter(\.name == name) //파라미터의 name으로 동일한 Category 필터링한다.
             .first()
             .flatMap(to: Void.self) { foundCategory in
-                if let existingCategory = foundCategory {
+                if let existingCategory = foundCategory { //동일한 name을 가진 Category가 있다면
                     return acronym.categories
                         .attach(existingCategory, on: req)
+                        //해당 acronym에 Category를 추가해주는 관계를 설정한다.
                         .transform(to: ())
-                } else {
+                } else { //Category가 없다면
                     let category = Category(name: name)
+                    //제공된 name으로 Category 객체를 만들어
                     
                     return category.save(on: req)
                         .flatMap(to: Void.self) { savedCategory in
+                            //Category를 DB에 생성한다.
                             return acronym.categories
                                 .attach(savedCategory, on: req)
+                                //해당 acronym에 Category를 추가해주는 관계를 설정한다.
                                 .transform(to: ())
                         }
                 }

@@ -1,5 +1,6 @@
 import Vapor
 import Leaf
+import Fluent
 
 struct WebsiteController: RouteCollection {
     //Website 관리하는 객체. API와 달리 보여지는 뷰가 있어여 한다.
@@ -19,7 +20,8 @@ struct WebsiteController: RouteCollection {
         //category 보기 페이지 GET request. 경로는 http://localhost:8080/categories/<ID> 가 된다.
         router.get("acronyms", "create", use: createAcronymHandler)
         //acronym 생성 페이지 GET request. 경로는 http://localhost:8080/acronyms/create 가 된다.
-        router.post(Acronym.self, at: "acronyms", "create", use: createAcronymPostHandler)
+//        router.post(Acronym.self, at: "acronyms", "create", use: createAcronymPostHandler)
+        router.post(CreateAcronymData.self, at: "acronyms", "create", use: createAcronymPostHandler)
         //acronym 생성 페이지 POST request. 경로는 http://localhost:8080/acronyms/create 가 된다.
         router.get("acronyms", Acronym.parameter, "edit", use: editAcronymHandler)
         //acronym 수정 페이지 GET request. 경로는 http://localhost:8080/acronyms/<ID>/edit 가 된다.
@@ -61,8 +63,16 @@ struct WebsiteController: RouteCollection {
                 return acronym.user //acronym의 user를 가져오고
                     .get(on: req)
                     .flatMap(to: View.self) { user in //flatMap으로 result를 unwrapping한다.
-                        let context = AcronymContext(title: acronym.short, acronym: acronym, user: user)
-                        //세부 정보가 있는 AcronymContext를 생성
+//                        let context = AcronymContext(title: acronym.short, acronym: acronym, user: user)
+//                        //세부 정보가 있는 AcronymContext를 생성
+                        let categories = try acronym.categories.query(on: req).all()
+                        let context = AcronymContext(
+                            title: acronym.short,
+                            acronym: acronym,
+                            user: user,
+                            categories: categories)
+                        //카테고리 정보를 추가한 AcronymContext 생성
+                        //Future를 Leaf로 넘겨, 이것이 필요할 때 처리한다.
                         
                         return try req.view().render("acronym", context)
                         //acronym.leaf 템플릿을 사용해서 페이지를 렌더링한다.
@@ -141,20 +151,52 @@ struct WebsiteController: RouteCollection {
         //createAcronym.leaf 템플릿을 사용해서 페이지를 렌더링한다.
     }
     
-    func createAcronymPostHandler(_ req: Request, acronym: Acronym) throws -> Future<Response> { //Future<Response> 반환
-        //Creating Acronym page for POST //Vapor는 form 데이터를 Acronym으로 자동 디코딩한다.
-        return acronym.save(on: req).map(to: Response.self) { acronym in
-            //매개 변수의 Acronym을 DB에 저장. //unwrapping한다.
-            //map()과 flatMap()은 모두 Future를 다른 유형의 Future로 매핑한다.
-            //단, 클로저의 매개 변수(in 앞의 값)가 map()에서는 실제 값이이고, flatMap()에서는 Futrue이다.
-            guard let id = acronym.id else { //id 유효성 확인
-                throw Abort(.internalServerError)
-                //500 Internal Server Error
+//    func createAcronymPostHandler(_ req: Request, acronym: Acronym) throws -> Future<Response> { //Future<Response> 반환
+//        //Creating Acronym page for POST //Vapor는 form 데이터를 Acronym으로 자동 디코딩한다.
+//        return acronym.save(on: req).map(to: Response.self) { acronym in
+//            //매개 변수의 Acronym을 DB에 저장. //unwrapping한다.
+//            //map()과 flatMap()은 모두 Future를 다른 유형의 Future로 매핑한다.
+//            //단, 클로저의 매개 변수(in 앞의 값)가 map()에서는 실제 값이이고, flatMap()에서는 Futrue이다.
+//            guard let id = acronym.id else { //id 유효성 확인
+//                throw Abort(.internalServerError)
+//                //500 Internal Server Error
+//            }
+//
+//            return req.redirect(to: "/acronyms/\(id)")
+//            //새로 생성된 acronym 상세 정보 페이지로 redicrection 한다.
+//        }
+//    }
+    
+    func createAcronymPostHandler(_ req: Request, data: CreateAcronymData) throws -> Future<Response> { //Future<Response> 반환
+        //Creating Acronym page for POST //Category를 설정할 수 있는 CreateAcronymData로 변경한다.
+        let acronym = Acronym(short: data.short, long: data.long, userID: data.userID)
+        //저장할 acronym 객체 생성
+        
+        return acronym.save(on: req)
+            .flatMap(to: Response.self) { acronym in
+                //매개 변수의 Acronym을 DB에 저장. //unwrapping한다.
+                //map()과 flatMap()은 모두 Future를 다른 유형의 Future로 매핑한다.
+                //단, 클로저의 매개 변수(in 앞의 값)가 map()에서는 실제 값이이고, flatMap()에서는 Futrue이다.
+                //여기서는 Future<Response>를 반환하므로 map(to :) 대신 flatMap(to :)을 써야 한다.
+                guard let id = acronym.id else { //id 유효성 확인
+                    throw Abort(.internalServerError)
+                    //500 Internal Server Error
+                }
+                
+                var categorySaves: [Future<Void>] = []
+                //카테고리를 저장할 Future 배열
+                
+                for category in data.categories ?? [] {
+                    try categorySaves.append(
+                        Category.addCategory(category, to: acronym, on: req))
+                    //카테고리 관계를 설정하고 배열에 추가
+                }
+                
+                let redirect = req.redirect(to: "/acronyms/\(id)")
+                
+                return categorySaves.flatten(on: req) //모든 Fluent 작업을 완료하고, 결과를 Response로 변환하기 위해 flatten
+                    .transform(to: redirect) //새로 생성된 acronym 상세 정보 페이지로 redicrection 한다.
             }
-            
-            return req.redirect(to: "/acronyms/\(id)")
-            //새로 생성된 acronym 상세 정보 페이지로 redicrection 한다.
-        }
     }
     
     //웹 응용 프로그램에서 Acronym을 생성하려면 두 개의 경로를 구현해야 한다.
@@ -165,37 +207,102 @@ struct WebsiteController: RouteCollection {
         //Editing Acronym page for GET
         return try req.parameters.next(Acronym.self)
             .flatMap(to: View.self) { acronym in
-                let context = EditAcronymContext(acronym: acronym, users: User.query(on: req).all())
-                //Acronym을 편집하여 모든 User 를 전달하는 Context
-                //모든 User를 가져온다.
+//                let context = EditAcronymContext(acronym: acronym, users: User.query(on: req).all())
+//                //Acronym을 편집하여 모든 User 를 전달하는 Context
+//                //모든 User를 가져온다.
+                let users = User.query(on: req).all() //모든 user를 가져온다
+                let categories = try acronym.categories.query(on: req).all() //모든 category를 가져온다
+                let context = EditAcronymContext(acronym: acronym, users: users, categories: categories)
+                //Acronym을 편집하여 모든 User, Category 를 전달하는 Context
                 
                 return try req.view().render("createAcronym", context)
                 //createAcronym.leaf 템플릿을 사용해서 페이지를 렌더링한다.
             }
     }
     
-    func editAcronymPostHandler(_ req: Request) throws -> Future<Response> { //Future<Response> 반환
-        //Editing Acronym page for POST
-        return try flatMap(to: Response.self, req.parameters.next(Acronym.self), req.content.decode(Acronym.self)) { acronym, data in
-            //파라미터로 to: Response(최종 반환형), id로 요청해서 가져온 객체(수정할 객체), 디코딩 객체(form 에서 입력한 정보)
-            
-            acronym.short = data.short
-            acronym.long = data.long
-            acronym.userID = data.userID
-            //Acronym 업데이트
-            
-            return acronym.save(on: req) //DB에 저장
-                .map(to: Response.self) { savedAcronym in
-                    //반환된 Futuref를 unwrapping
-                    guard let id = savedAcronym.id else { //id가 유효한지 확인
-                        throw Abort(.internalServerError)
-                        //500 Internal Server
-                    }
-                    
-                    return req.redirect(to: "/acronyms/\(id)")
-                    //업데이트가 된 acronym 상세 정보 페이지로 redicrection 한다.
-                }
-            }
+//    func editAcronymPostHandler(_ req: Request) throws -> Future<Response> { //Future<Response> 반환
+//        //Editing Acronym page for POST
+//        return try flatMap(to: Response.self, req.parameters.next(Acronym.self), req.content.decode(Acronym.self)) { acronym, data in
+//            //파라미터로 to: Response(최종 반환형), id로 요청해서 가져온 객체(수정할 객체), 디코딩 객체(form 에서 입력한 정보)
+//
+//            acronym.short = data.short
+//            acronym.long = data.long
+//            acronym.userID = data.userID
+//            //Acronym 업데이트
+//
+//            return acronym.save(on: req) //DB에 저장
+//                .map(to: Response.self) { savedAcronym in
+//                    //반환된 Futuref를 unwrapping
+//                    guard let id = savedAcronym.id else { //id가 유효한지 확인
+//                        throw Abort(.internalServerError)
+//                        //500 Internal Server
+//                    }
+//
+//                    return req.redirect(to: "/acronyms/\(id)")
+//                    //업데이트가 된 acronym 상세 정보 페이지로 redicrection 한다.
+//                }
+//            }
+//    }
+    
+    func editAcronymPostHandler(_ req: Request) throws -> Future<Response> {
+        return try flatMap(to: Response.self,
+                           req.parameters.next(Acronym.self),
+                           req.content
+                            //파라미터로 to: Response(최종 반환형), id로 요청해서 가져온 객체(수정할 객체), 디코딩 객체(form 에서 입력한 정보)
+                            .decode(CreateAcronymData.self)) { acronym, data in
+                                acronym.short = data.short
+                                acronym.long = data.long
+                                acronym.userID = data.userID
+                                
+                                return acronym.save(on: req)
+                                    .flatMap(to: Response.self) { savedAcronym in
+                                        //클로저가 Future를 반환하므로 flatMap을 사용해야 한다.
+                                        guard let id = savedAcronym.id else {
+                                            throw Abort(.internalServerError)
+                                        }
+                                        
+                                        return try acronym.categories.query(on: req).all()
+                                            .flatMap(to: Response.self) { existingCategories in //모든 카테고리 가져온다.
+                                                let existingStringArray = existingCategories.map { $0.name }
+                                                //카테고리의 이름을 가져온다.
+                                                
+                                                let existingSet = Set<String>(existingStringArray) //카테고리에 대한 Set 생성
+                                                let newSet = Set<String>(data.categories ?? []) //request data이 카테고리 Set
+                                                
+                                                let categoriesToAdd = newSet.subtracting(existingSet) //추가할 카테고리 Set
+                                                let categoriesToRemove = existingSet.subtracting(newSet) //삭제할 카테고리 Set
+                                                
+                                                var categoryResults: [Future<Void>] = [] //작업 결과
+                                                
+                                                for newCategory in categoriesToAdd { //추가하려는 모든 카테고리 반복하여
+                                                    categoryResults.append(try Category.addCategory(
+                                                        newCategory,
+                                                        to: acronym,
+                                                        on: req))
+                                                    //배열에 추가하고 관계 설정
+                                                }
+                                                
+                                                for categoryNameToRemove in categoriesToRemove { //제거하려는 모든 카테고리 반복
+                                                    let categoryToRemove = existingCategories.first {
+                                                        $0.name == categoryNameToRemove
+                                                        //제거할 카테고리 이름에서 Category 객체를 가져온다.
+                                                    }
+                                                    
+                                                    if let category = categoryToRemove {
+                                                        categoryResults.append(acronym.categories.detach(category, on: req))
+                                                        //카테고리가 있다면, detach로 관계 제거하고 피벗 삭제
+                                                    }
+                                                }
+                                                
+                                                return categoryResults
+                                                    .flatten(on: req)
+                                                    .transform(to: req.redirect(to: "/acronyms/\(id)"))
+                                                    //업데이트가 된 acronym 상세 정보 페이지로 redicrection 한다.
+                                        }
+                                }
+                                
+                                
+        }
     }
     
     //웹 응용 프로그램에서 Acronym을 수정하려면 두 개의 경로를 구현해야 한다.
@@ -234,6 +341,7 @@ struct AcronymContext: Encodable {
     let title: String
     let acronym: Acronym
     let user: User
+    let categories: Future<[Category]>
 }
 
 struct UserContext: Encodable {
@@ -283,6 +391,15 @@ struct EditAcronymContext: Encodable {
     //Leaf에서도 Future를 처리할 수 있다.
     //Handler에서 wrapping된 Future에 접근할 필요 없을 경우 이렇게 선언하면, 코드를 간단하게 정리할 수 있다.
     let editing = true //수정 인지 생성인지 템플릿에 알려주는 flag
+    let categories: Future<[Category]>
+}
+
+struct CreateAcronymData: Content {
+    //Acronym에 생성 페이지의 Encodable 유형. Category를 추가하는 배열이 추가되었다.
+    let userID: User.ID
+    let short: String
+    let long: String
+    let categories: [String]?
 }
 
 //Vapor와 마찬가지로 Leaf는 Codable을 사용하여 데이터를 처리한다.
