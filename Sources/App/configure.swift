@@ -2,6 +2,7 @@
 import FluentPostgreSQL //FluentPostgreSQL
 import Vapor
 import Leaf
+import Authentication
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
@@ -17,6 +18,9 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     try services.register(LeafProvider())
     //LeafProvider를 등록한다.
+    
+    try services.register(AuthenticationProvider())
+    //Authentication를 등록한다.
     
     /// Register routes to the router
     let router = EngineRouter.default()
@@ -131,7 +135,10 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model: Acronym.self, database: .psql) //PostgreSQL DB를 지정해 준다. //Acronym 모델 추기
     migrations.add(model: Category.self, database: .psql) //Category 모델 추가
     migrations.add(model: AcronymCategoryPivot.self, database: .psql) //AcronymCategoryPivot 모델 추가
-    services.register(migrations)
+    migrations.add(model: Token.self, database: .psql) //Token 모델 추가
+    migrations.add(migration: AdminUser.self, database: .psql) //AdminUser 추가. default User 가 생성된다.
+    //여기선 full model이 아니므로 add(model:database:) 대신 add(migration:database:)를 사용한다.
+    services.register(migrations) //Vapor가 응용 프로그램이 시작될 때 해당 모델의 테이블을 생성한다.
     
     
     
