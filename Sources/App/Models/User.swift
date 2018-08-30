@@ -155,3 +155,15 @@ struct AdminUser: Migration {
     //하지만, User의 생성 또한 인증이 필요하므로 새 사용자를 생성할 수 없다.
     //이를 해결하는 방법은 처음 DB를 설정할 때 Database seeding을 하고, User를 만드는 것이다.
 }
+
+
+
+
+//Implementing sessions
+extension User: PasswordAuthenticatable {}
+//PasswordAuthenticatable를 구현하면, Vapor가 로그인 할 때 username과 password로 인증할 수 있다.
+//이미 BasicAuthenticatable에서 PasswordAuthenticatable 구현에 필요한 속성을 이미 구현 했다.
+
+extension User: SessionAuthenticatable {}
+//SessionAuthenticatable를 구현하면, 응용 프로그램이 세션의 일부로 사용자를 저장하고 검색 할 수 있다.
+

@@ -17,6 +17,8 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" integrity="sha384-HIipfSYbpCkh5/1V87AWAeR5SUrNiewznrUrtNz1ux4uneLhsAKzv/0FnMbj3m6g" crossorigin="anonymous">
     }
 
+    <link rel="stylesheet" href="/styles/style.css">
+
     <title>#(title) | Acronyms</title>
     #// #()는 Leaf 함수로 여기서는 title이라는 매개변수를 추출한다.
     #// Vapor와 마찬가지로 Leaf는 Codable을 사용하여 데이터를 처리한다.
@@ -63,12 +65,32 @@
                 #// Acronym 생성 페이지에 대한 링크 추가
                 #// Leaf의 #if를 사용해, 페이지 제목이 "Create An Acronym"인 경우 active class를 추가한다.
             </ul>
+
+            #if(userLoggedIn) { #// 사용자가 로그인한 경우에만 로그아웃 옵션 표시
+                <form class="form-inline" action="/logout" method="POST">
+                    #// /logout에 POST request 보내는 form
+                    <input class="nav-link btn btn-link" type="submit" value="Log out">
+                    #// 로그아웃 값으로 form에 submit을 추가
+                </form>
+            }
         </div>
     </nav>
 
     <div class="container mt-3">
         #get(content) #// Leaf의 get()을 사용해, 콘텐츠 변수를 검색한다.
     </div>
+
+    #if(showCookieMessage) { #// showCookieMessage가 true이면
+        <footer id="cookie-footer"> #// footer를 추가한다.
+            <div id="cookieMessage" class="container">
+                <span class="muted">
+                    This site uses cookies! To accept this, click <a href="#" onclick="cookiesConfirmed()">OK</a>
+                    #// 사용자가 클릭할 수 있는 OK 링크 추가. 쿠키 메시지를 닫는 JavaScript함수 cookiesConfirmed() 호출한다.
+                </span>
+            </div>
+        </footer>
+        <script src="/scripts/cookies.js"></script>
+    }
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->

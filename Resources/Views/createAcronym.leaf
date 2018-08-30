@@ -2,6 +2,11 @@
     <h1>#(title)</h1>
 
     <form method="post"> #// HTML form. 사용자가 form을 제출할 때 POST request를 URL로 보낸다.
+        #if(csrfToken) { #// context에 csrfToken 값이 있는지 확인한다.
+            <input type="hidden" name="csrfToken" value="#(csrfToken)">
+            #// 숨겨진 input으로 브라우저는 이 토큰 정보를 사용자에게 표시하지 않는다.
+        }
+
         <div class="form-group">
             <label for="short">Acronym</label>
             <!-- <input type="text" name="long" class="form-control" id="short"/> -->
@@ -18,22 +23,20 @@
             #// editing flag가 true라면, 이전 값을 삽입한다.
             #// name 속성은 request에서 데이터를 보낼 때, 브라우저에 키를 알려준다.
         </div>
-        <div class="form-group">
+
+        <!-- <div class="form-group">
             <label for="userID">User</label>
             <select name="userID" class="form-control" id="userID">
                 #// <select>로 drop-down 메뉴를 생성한다.
-                #for(user in users) {
+                #// #for(user in users) {
                     #// Leaf의 #for()를 사용해, 모든 user를 반복한다.
-                    <!-- <option value="#(user.id)">
-                        #(user.name)
-                    </option> -->
                     <option value="#(user.id)" #if(editing){#if(acronym.userID == user.id){selected}}>
                         #// acronym.userID가 user.id와 일치하면, selected 설정해, drop-down 메뉴에서 선택된 것으로 표시
                         #(user.name)
                     </option>
-                }
+                #// }
             </select>
-        </div>
+        </div> -->
 
         <div class="form-group">
             <label for="categories">Categories</label>
