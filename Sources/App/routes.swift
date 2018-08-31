@@ -169,6 +169,9 @@ public func routes(_ router: Router) throws {
     let websiteController = WebsiteController() //Website의 경로를 처리하는 Controller 생성
     try router.register(collection: websiteController) //라우터에 등록한다.
     
+    let imperialController = ImperialController() //OAuh2.0 경로를 처리하는 Controller 생성
+    try router.register(collection: imperialController) //라우터에 등록한다.
+    
     
     
     
