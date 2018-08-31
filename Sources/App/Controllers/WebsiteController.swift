@@ -73,6 +73,10 @@ struct WebsiteController: RouteCollection {
         //로그아웃 페이지 POST request. 경로는 http://localhost:8080/logout 이 된다.
         //응용 프로그램 상태를 변견하는 모든 것은 항상 POST request를 사용해야 한다.
         //최신 브라우저는 GET request를 미리 가져오므로 POST를 사용하지 않으면 사용자가 예기치 않게 로그아웃 될 수 있다.
+        authSessionRoutes.get("register", use: registerHandler)
+        //가입 페이지 GET request. 경로는 http://localhost:8080/register 가 된다.
+        authSessionRoutes.post(RegisterData.self, at: "register", use: registerPostHandler)
+        //가입 페이지 POST request. 경로는 http://localhost:8080/register 가 된다.
         
         //이렇게 authSessionRoutes를 추가시켜 놓으면, 페이지에서 User를 사용할 수 있다.
         //지금 당장은 사용하지 않는 페이지도 있지만, 원하는 페이지에 사용자 별 콘텐츠(ex. 프로필 등)을 표시하는 데 유용하다.
@@ -250,7 +254,7 @@ struct WebsiteController: RouteCollection {
 //                //500 Internal Server Error
 //            }
 //
-//            return req.redirect(to: "/acronyms/\(id)")
+//            return dreq.redirect(to: "/acronyms/\(id)")
 //            //새로 생성된 acronym 상세 정보 페이지로 redicrection 한다.
 //        }
 //    }
@@ -471,6 +475,60 @@ struct WebsiteController: RouteCollection {
         return req.redirect(to: "/")
         //홈페이지 메인 화면으로 redirection
     }
+    
+    
+    
+    
+    //Register
+    func registerHandler(_ req: Request) throws -> Future<View> { //Future<View> 반환
+        //Register page for GET
+        let context: RegisterContext
+        
+        if let message = req.query[String.self, at: "message"] { //message 존재하는 경우
+            //경로가 /register?message=some-string 인 경우
+            context = RegisterContext(message: message)
+        } else {
+            context = RegisterContext()
+        }
+        
+        return try req.view().render("register", context)
+        //register.leaf 템플릿을 사용해서 페이지를 렌더링한다.
+    }
+    
+    func registerPostHandler(_ req: Request, data: RegisterData) throws -> Future<Response> { //Future<Response> 반환
+        //Register in page for POST
+        do {
+            try data.validate() //유효성 검사를 한다(RegisterData가 Validatable를 구현했다).
+            //validate()는 ValidationError를 발생시킬 수 있다.
+            //API에서는 이 오류를 사용자에게 전달하는 것이 좋지만, 웹 사이트에서는 UX를 고려해야 한다.
+        } catch (let error) { //오류 시
+            //ValidationError에서 message를 추출해 URL에 포함되도록 한다.
+            let redirect: String
+            
+            if let error = error as? ValidationError,
+                let message = error.reason.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                redirect = "/register?message=\(message)"
+            } else {
+                redirect = "/register?message=Unknown+error"
+            }
+            
+            return req.future(req.redirect(to: redirect))
+            //register 페이지로 redirection
+        }
+        
+        let password = try BCrypt.hash(data.password) //password 해시
+        let user = User(name: data.name, username: data.username, password: password)
+        //user 생성
+        
+        return user.save(on: req).map(to: Response.self) { user in
+            //새로운 user 저장하고 반환된 future를 unwarpping한다.
+            try req.authenticateSession(user) //새 사용자에 대한 세션 인증
+            //이렇게 하면 등록 할 때 자동으로 사용자를 기록하므로 사이트에 가입할 때 향상된 UX를 제공한다.
+            
+            return req.redirect(to: "/")
+            //홈페이지 메인 화면으로 redirection
+        }
+    }
 }
 
 struct IndexContext: Encodable {
@@ -615,3 +673,61 @@ struct LoginPostData: Content {
 //Cookies
 //인증을 구현하기 위해 쿠키를 사용했지만, 때로는 쿠키를 수동으로 설정하고 읽을 수 있다.
 
+
+
+
+//Register
+struct RegisterContext: Encodable {
+    //가입 페이지의 Encodable 유형
+    let title = "Register"
+    //The registration page
+    //Vapor Validation 라이브러리를 사용하여 사용자가 응용 프로그램을 전송하는 정보 중 일부를 확인할 수 있다.
+    
+    let message: String? //register page에 표시할 error message
+    
+    init(message: String? = nil) { //register에 error가 없는 경우 default로 nil
+        self.message = message
+    }
+}
+
+struct RegisterData: Content {
+    //가입 페이지의 POST 데이터
+    let name: String
+    let username: String
+    let password: String
+    let confirmPassword: String
+    //register.leaf의 context 변수명과 일치해야 한다.
+}
+
+
+
+
+extension RegisterData: Validatable, Reflectable {
+    //Validatable를 구현하면 Vapor로 유형을 검증할 수 있다.
+    //Reflectable를 구현하면 유형의 내부 구성 요소를 찾는 방법을 제공받을 수 있다.
+    static func validations() throws -> Validations<RegisterData> {
+        //Validatable을 구현하려면 이 메서드를 구현해야 한다.
+        var validations = Validations(RegisterData.self) //해당 모델의 유효성을 검사하는 Validations을 생성한다.
+        
+        try validations.add(\.name, .ascii) //RegisterData의 name이 ASCII 문자만 포함하도록 한다(일부 국가에선 주의해야 한다).
+        //.ascii 유효성 검사는 String 유형에서만 작동한다(Int에서는 작동하지 않는다.).
+        try validations.add(\.username, .alphanumeric && .count(3...)) //count(_:)는 Swift Range를 사용한다.
+        //RegisterData의 username이 영어 숫자만으로 되어 있고, 길이가 3자 이상인지 확인한다.
+        try validations.add(\.password, .count(8...))
+        //RegisterData의 password가 8자 이상인지 확인한다.
+        
+        validations.add("passwords match") { model in //Custom validation
+            //Validation의 add(_:_:)를 메서드를 사용해 사용자 정의 유효성 검사를 추가한다.
+            //첫 번째 매개변수는 message, 두 번째 매개변수는 유효성 검사가 실패할 경우 throw 해야할 클로저 이다.
+            guard model.password == model.confirmPassword else { //password와 confirmPassword 일치 여부 확인
+                throw BasicValidationError("passwords don’t match") //BasicValidationError 생성
+            }
+        }
+        
+        return validations
+    }
+    
+    //Basic validation
+    //Vapor는 데이터 및 모델을 확인하는 데 도움이 되는 유효성(validation) 검사 모듈을 제공한다.
+    //Vapor는 Key paths를 사용하므로, 형식에 대한 유효성 검사를 만들 수 있다.
+}

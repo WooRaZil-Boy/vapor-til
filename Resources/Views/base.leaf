@@ -64,6 +64,14 @@
                 </li>
                 #// Acronym 생성 페이지에 대한 링크 추가
                 #// Leaf의 #if를 사용해, 페이지 제목이 "Create An Acronym"인 경우 active class를 추가한다.
+
+                #if(!userLoggedIn) { #// 로그인한 사용자 없는 경우에만 가입 링크가 표시된다.
+                    <li class="nav-item #if(title == "Register"){active}">
+                        <a href="/register" class="nav-link">Register</a>
+                    </li>
+                    #// 가입 페이지에 대한 링크 추가
+                    #// Leaf의 #if를 사용해, 페이지 제목이 "Register"인 경우 active class를 추가한다.
+                }
             </ul>
 
             #if(userLoggedIn) { #// 사용자가 로그인한 경우에만 로그아웃 옵션 표시
