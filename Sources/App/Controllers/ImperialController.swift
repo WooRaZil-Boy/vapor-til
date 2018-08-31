@@ -134,6 +134,13 @@ extension Google { //Imperial의 Google 서비스를 extension
 
 
 
-//Integrating with web authentication
-
-//Sending requests to third-party APIs
+//Deploying to Vapor Cloud p.369
+//Vapor Cloud에 배포하기 전에 OAuth의 client ID, secret, callback URL 를 제공해야 한다.
+//vapor cloud config modify config set --env=production \
+//    GOOGLE_CALLBACK_URL=https://<YOUR_VAPOR_CLOUD_URL>/oauth/google
+//vapor cloud config modify config set --env=production \
+//GOOGLE_CLIENT_ID=<YOUR_CLIENT_ID>
+//vapor cloud config modify config set --env=production \
+//GOOGLE_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
+//터미널에서 배포 전에 이런 식으로 지정해 줘야 한다.
+//이렇게 해서 git이나 Local에 정보를 저장하지 않고도 Vapor Cloud에 전달해 줄 수 있다.
