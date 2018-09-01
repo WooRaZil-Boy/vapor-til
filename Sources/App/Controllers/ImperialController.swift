@@ -119,7 +119,7 @@ extension Google { //Imperial의 Google 서비스를 extension
 //Setting up your application with Google
 //OAuth 생성시 Authorized redirect URIs는 사용자가 응용 프로그램에서 데이터에 액세스하도록 허용하면 Google이 다시 리디렉션하는 URL이다.
 //http://localhost:8080/oauth/google (Local)
-//https://rw-til.vapor.cloud/oauth/google (Vapor Cloud)
+//https://<YOUR_VAPOR_CLOUD_URL>/oauth/google (Vapor Cloud)
 //이런 식으로 설정해 주면 된다.
 
 //Setting up the integration
