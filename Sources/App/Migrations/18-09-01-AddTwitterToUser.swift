@@ -84,4 +84,5 @@ struct AddTwitterURLToUser: Migration {
 
 //Deploy to Vapor Cloud
 //이전에는 모델을 변경할 때 마다 전체 DB를 삭제해야 했지만, 마이그레이션이 제대로 완료된 경우에는 그럴 필요 없이 바로 Deploy 할 수 있다.
+//https://docs.vapor.codes/3.0/fluent/migrations/
 
