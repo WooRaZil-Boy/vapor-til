@@ -138,8 +138,19 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model: Category.self, database: .psql) //Category 모델 추가
     migrations.add(model: AcronymCategoryPivot.self, database: .psql) //AcronymCategoryPivot 모델 추가
     migrations.add(model: Token.self, database: .psql) //Token 모델 추가
-    migrations.add(migration: AdminUser.self, database: .psql) //AdminUser 추가. default User 가 생성된다.
-    //여기선 full model이 아니므로 add(model:database:) 대신 add(migration:database:)를 사용한다.
+
+    switch env {
+    case .development, .testing: //개발이거나 테스트 환경인 경우에만
+        migrations.add(migration: AdminUser.self, database: .psql) //AdminUser 추가. default User 가 생성된다.
+        //여기선 full model이 아니므로 add(model:database:) 대신 add(migration:database:) 를 사용한다.
+    default: //일반적으로 출시된 Product라면 기본 사용자 없이, 새 사용자를 Register 해서 사용해야 한다.
+        break
+    }
+    
+    migrations.add(migration: AddTwitterURLToUser.self, database: .psql) //AddTwitterURLToUser 추가
+    //Migration은 순서대로 진행되므로 기존 마이그레이션 이후에 호출되어야 한다.
+    //User에 새로운 속성이 추가된다. full model이 아니므로 add(model:database:) 대신 add(migration:database:) 를 사용한다.
+    migrations.add(migration: MakeCategoriesUnique.self, database: .psql) //MakeCategoriesUnique 추가
     services.register(migrations) //Vapor가 응용 프로그램이 시작될 때 해당 모델의 테이블을 생성한다.
     
     

@@ -1,6 +1,10 @@
 #set("content") { #// 콘텐츠 변수를 설정한다. 다른 곳에서 #get() 으로 해당 부분을 가져올 수 있다.
     <h1>#(user.name)</h1>
-    <h2>#(user.username)</h2>
+    <h2>#(user.username)
+        #if(user.twitterURL) { #// twitterURL가 있다면 추가해 준다.
+            - #(user.twitterURL)
+        }
+    </h2>
 
     #if(count(acronyms) > 0) {
         #// Leaf의 #if() 와 count를 사용해, acronyms이 비었는지 확인한다.

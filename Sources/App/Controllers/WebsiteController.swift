@@ -517,7 +517,14 @@ struct WebsiteController: RouteCollection {
         }
         
         let password = try BCrypt.hash(data.password) //password 해시
-        let user = User(name: data.name, username: data.username, password: password)
+        
+        var twitterURL: String?
+        
+        if let twitter = data.twitterURL, !twitter.isEmpty { //twitterURL 이 있으면 추가. 없으면 nil
+            twitterURL = twitter
+        }
+        
+        let user = User(name: data.name, username: data.username, password: password, twitterURL: twitterURL)
         //user 생성
         
         return user.save(on: req).map(to: Response.self) { user in
@@ -696,6 +703,7 @@ struct RegisterData: Content {
     let username: String
     let password: String
     let confirmPassword: String
+    let twitterURL: String?
     //register.leaf의 context 변수명과 일치해야 한다.
 }
 

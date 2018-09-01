@@ -9,11 +9,14 @@ final class User: Codable {
     var username: String
     var password: String //사용자 비밀번호
     //Codable을 구현 했으므로, 사용자를 만들 때 추가로 변경할 필요 없다.
+    var twitterURL: String? //Model에 새 속성 추가
+    //기존 사용자에게는 해당 속성이 없으므로 optional
     
-    init(name: String, username: String, password: String) {
+    init(name: String, username: String, password: String, twitterURL: String? = nil) {
         self.name = name
         self.username = username
         self.password = password
+        self.twitterURL = twitterURL
     }
     
     final class Public: Codable {
@@ -23,11 +26,13 @@ final class User: Codable {
         var id: UUID?
         var name: String
         var username: String
+        var twitterURL: String?
         
-        init(id: UUID?, name: String, username: String) {
+        init(id: UUID?, name: String, username: String, twitterURL: String? = nil) {
             self.id = id
             self.name = name
             self.username = username
+            self.twitterURL = twitterURL
         }
     }
 }
@@ -64,8 +69,19 @@ extension User: Migration {
         //DB에서 실행할 마이그레이션 변경 설정
         return Database.create(self, on: connection) { builder in
             //User table을 생성한다.
-            try addProperties(to: builder)
-            //생성된 User 테이블의 column(열)에 모든 User 속성을 추가한다.
+            
+//            try addProperties(to: builder)
+//            //생성된 User 테이블의 column(열)에 모든 User 속성을 추가한다.
+            
+            builder.field(for: \.id, isIdentifier: true)
+            builder.field(for: \.name)
+            builder.field(for: \.username)
+            builder.field(for: \.password)
+            //twitterURL를 제외한 기존 속성을 DB에 수동으로 추가
+            
+            //prepare(on:)은 모델에서 찾은 모든 속성을 추가한다.
+            //전체 DB를 되돌리고 처음 마이그레이션에서 모든 필드를 추가하면 모델에 추가된 새 필드가 있기 때문에 마이그레이션이 실패한다.
+            //마이그레이션 시 try addProperties(to: builder)를 사용하면, 모든 필드를 추가하기 때문에 새 마이그레이션이 실패한다.
             
             builder.unique(on: \.username)
             //User에 unique index(여기서는 username)를 추가한다.
@@ -87,8 +103,12 @@ extension User: Migration {
 
 extension User {
     func convertToPublic() -> User.Public { //User.Public을 반환하는 User 메서드
-        return User.Public(id: id, name: name, username: username) //Public을 반환한다.
+        return User.Public(id: id, name: name, username: username, twitterURL: twitterURL) //Public을 반환한다.
         //공개되도 상관없는 정보들만 Public class로 만들어 response로 반환한다.
+        
+        //새 모델에서 twitterURL이 추가되었다.
+        //기존 모델에 새 특성을 추가할 때 원래의 필드만 추가하도록 초기 마이그레이션을 수정하는 것이 중요하다.
+        //기본적으로 prepare(on:)은 모델에서 찾은 모든 속성을 추가한다.
     }
 }
 

@@ -127,9 +127,9 @@ extension Google { //Imperial의 Google 서비스를 extension
 //환경 변수를 사용해 Imperial에 설정한다. Xcode에서는 실행 시의 Scheme를 편집해 설정해 줄 수 있다.
 //빌드 버튼 옆의 Scheme 를 눌러 Edit scheme를 선택한다.
 //Run의 Arguments 탭에서 Environment Variables 부분에 다음 세 가지 key-value를 추가해 준다.
-//• GOOGLE_CALLBACK_URL
-//• GOOGLE_CLIENT_ID
-//• GOOGLE_CLIENT_SECRET
+// • GOOGLE_CALLBACK_URL
+// • GOOGLE_CLIENT_ID
+// • GOOGLE_CLIENT_SECRET
 
 
 
